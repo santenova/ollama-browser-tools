@@ -2,6 +2,8 @@ const isNode = typeof window === 'undefined';
 const windowObj = isNode ? { localStorage: new Map() } : window;
 export const localStorage = windowObj.localStorage;
 
+export const token = "_token_";
+
 const toSnakeCase = (str) => {
 	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
@@ -20,14 +22,14 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 		window.history.replaceState({}, document.title, newUrl);
 	}
 	if (searchParam) {
-		storage.setItem(storageKey, searchParam);
+		localStorage.setItem(storageKey, searchParam);
 		return searchParam;
 	}
 	if (defaultValue) {
-		storage.setItem(storageKey, defaultValue);
+		localStorage.setItem(storageKey, defaultValue);
 		return defaultValue;
 	}
-	const storedValue = storage.getItem(storageKey);
+	const storedValue = localStorage.getItem(storageKey);
 	if (storedValue) {
 		return storedValue;
 	}
@@ -36,8 +38,8 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 
 export const getAppParams = () => {
 	if (getAppParamValue("clear_access_token") === 'true') {
-		storage.removeItem('aiorreal_access_token');
-		storage.removeItem('token');
+		localStorage.removeItem('aiorreal_access_token');
+		localStorage.removeItem('token');
 	}
     const c = {
       appId: getAppParamValue("app_id", {

@@ -19,10 +19,10 @@ export async function thinkingStreaming() {
   for await (const chunk of response) {
     if (chunk.message.thinking && !startedThinking) {
       startedThinking = true
-      process.stdout.write('Thinking:\n========\n\n')
+      process.stdout.write('\nthinkingStreaming\tThinking:\n========\n\n')
     } else if (chunk.message.content && startedThinking && !finishedThinking) {
       finishedThinking = true
-      process.stdout.write('\n\nResponse:\n========\n\n')
+      process.stdout.write('\nthinkingStreaming\tResponse:\n========\n\n')
     }
 
     if (chunk.message.thinking) {

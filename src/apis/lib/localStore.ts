@@ -1,4 +1,3 @@
-// localStorage.ts
 
 /**
  * Sets a value in localStorage with the specified key.
@@ -50,4 +49,10 @@ export function clear(): void {
   } catch (error) {
     console.error("Error clearing localStorage:", error);
   }
+}
+
+
+
+export function localStorage() {
+ return window.localStorage;
 }

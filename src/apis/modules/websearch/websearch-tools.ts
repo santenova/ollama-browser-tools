@@ -5,7 +5,12 @@ import {
   type WebFetchResponse,
 } from 'ollama'
 
-export async function websearchTools() {
+function printHeading(text: string) {
+  console.log(text)
+  console.log('='.repeat(text.length))
+
+}
+export async function websearchTools(model: string, prompt: string) {
   // Set enviornment variable OLLAMA_API_KEY=<YOUR>.<KEY>
   // or set the header manually
   //   const client = new Ollama({
@@ -62,19 +67,18 @@ export async function websearchTools() {
     },
   }
 
-  const query = 'What is Ollama?'
-  console.log('Prompt:', query, '\n')
+  printHeading('Prompt:', prompt, '\n');
 
   const messages: Message[] = [
     {
       role: 'user',
-      content: query,
+      content: prompt,
     },
   ]
 
   while (true) {
     const response = await client.chat({
-      model: 'qwen3:8b',
+      model: model,
       messages: messages,
       tools: [webSearchTool, webFetchTool],
       stream: true,
@@ -105,14 +109,14 @@ export async function websearchTools() {
           const functionToCall = availableTools[toolCall.function.name]
           if (functionToCall) {
             const args = toolCall.function.arguments as any
-            console.log(
-              '\nCalling function:',
-              toolCall.function.name,
-              'with arguments:',
-              args,
+            printHeading(
+              '\nCalling function:'+
+              toolCall.function.name+
+              'with arguments:')
+            printHeading(args
             )
             const output = await functionToCall(args)
-            console.log('Function result:', JSON.stringify(output).slice(0, 200), '\n')
+            printHeading('\nFunction result:', JSON.stringify(output).slice(0, 200), '\n')
 
             messages.push(chunk.message)
             messages.push({
@@ -131,4 +135,3 @@ export async function websearchTools() {
     }
   }
 }
-

@@ -1,44 +1,14 @@
 // src/apis/client.ts
 
+
 import axios from 'axios'; // Import axios directly
 
 import ollama, { Ollama } from 'ollama'
 import type { Message } from 'ollama'
-import { localStorage } from "../apis/lib/localStore.ts"
 
+import { appParams, appId,token,functionsVersion,appBaseUrl,getAppParams,localStorage } from "../apis/lib/app-params.ts";
+import { capabel } from "../apis/lib/resources.ts"
 
-export async function fetchModelIds(): Promise<string[]> {
-  const response = await fetch('https://christy-ramentaceous-verbatim.ngrok-free.dev/v1/models');
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  const data = await response.json();
-  return data.data.map((model: { id: string }) => model.id);
-}
-
-async function fetchModelCapabilities(modelId: string): Promise<any> {
-  const response = await fetch('http://localhost:11434/api/show', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: modelId,
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  const data = await response.json();
-  return {
-    model: modelId,
-    capabilities: data.capabilities,
-    modified: data.modified_at,
-    model_info: data.model_info,
-  };
-}
-
-import { appParams, appId,token,functionsVersion,appBaseUrl,getAppParams } from "../apis/lib/app-params.ts"
 import { capabel } from "../apis/lib/resurces.ts"
 import { createEntitiesModule } from "../apis/lib/entities.ts"
 import { createFunctionsModule } from "../apis/lib/functions.ts"
@@ -131,7 +101,62 @@ export const axiosClient = createAxiosClient({
     token
   });
 
-export function createClient(config) {
+
+
+
+
+export function createClient(config: {
+  serverUrl: string;
+  appId: string;
+  functionsVersion?: string;
+  headers: Record<string, string>;
+  model: string;
+  ollamaEndpoints: string[];
+  messages: Message[];
+}) {
+  const { serverUrl, appId, functionsVersion, headers, model, ollamaEndpoints, messages } = config;
+
+  let modelName = model;
+  let lastUserMessagePromptText = '';
+
+  const client = {
+    capabilities:{},
+    setConfig: async (config) => {  
+      config = config;
+    },
+    config:config,
+    setCapebilities: async (capabilities) => {  
+      capabilities = capabilities;
+    },
+    serverUrl,
+    appId,
+    functionsVersion,
+    headers,
+    ollamaEndpoints,
+    messages,
+    axiosInstance: createAxiosClient({ baseURL: serverUrl, headers, token }),
+    integrations: {
+        Core: {          
+          capabilities:  async() => { return capabel();},
+          vision:gptOssBrowserTools,
+          thinking:thinkingStreaming,
+          websearch:websearchTools,
+          toolbox:multiTool,
+          elasticSearchProxy:functionsAxiosClient,
+          ollamaProxy:createOllamaClient(),
+          InvokeLLM: async () => { console.log(["capabilities",[1,2,3]]); return "" },
+          UploadFile: async () => {  },
+          SendEmail: async () => {},
+          GenerateImage: async () => {},
+          ExtractDataFromUploadedFile: async () => {},
+        }
+    }
+  };
+  return client;
+}
+
+
+export function createClient2(config) {
   var _a, _b;
   const { serverUrl = "http://localhost", appId, token, serviceToken, requiresAuth = false, appBaseUrl, options, functionsVersion, headers: optionalHeaders, } = config;
   // Normalize appBaseUrl to always be a string (empty if not provided or invalid)
@@ -198,12 +223,37 @@ const userModules = {
       appId,
       getSocket,
     }),
-    integrations: {
-      Core: {
-        ollamaClient: async () => { }
-      },
+    setConfig: async (config) => {  
+      config = config;
     },
-
+    config:config,
+    setCapebilities: async (capabilities) => {  
+      capabilities = capabilities;
+    },
+    capabilities:{},
+    serverUrl,
+    appId,
+    functionsVersion,
+    headers,
+    ollamaEndpoints:config.ollamaEndpoints,
+    messages:config.messages,
+    axiosInstance: createAxiosClient({ baseURL: serverUrl, headers, token }),
+    integrations: {
+        Core: {          
+          capabilities:  async() => { return capabel();},
+          vision:gptOssBrowserTools,
+          thinking:thinkingStreaming,
+          websearch:websearchTools,
+          toolbox:multiTool,
+          elasticSearchProxy:functionsAxiosClient,
+          ollamaProxy:createOllamaClient(),
+          InvokeLLM: async () => { console.log(["capabilities",[1,2,3]]); return "" },
+          UploadFile: async () => {  },
+          SendEmail: async () => {},
+          GenerateImage: async () => {},
+          ExtractDataFromUploadedFile: async () => {},
+        }
+    },
     functions: createFunctionsModule(functionsAxiosClient, appId, {
       getAuthHeaders: () => {
         const headers = {};
@@ -249,6 +299,9 @@ const userModules = {
     asServiceRole: () => serviceRoleModules
   };
 
+
+    
+  console.log(assembledClient);
   return assembledClient;
 
 
@@ -275,9 +328,9 @@ export const localStub = {
         getSocket,
     }),
     params:getAppParams(),
-    integrations: {
+    integrations:{
     Core: {
-      capabilities:async () => { console.log(["capabilities",[1,2,3]]); return [1,2];  },
+      capabilities: async () => { console.log(["capabilities",[1,2,3]]); return  capabel()},
       vision:gptOssBrowserTools,
       thinking:thinkingStreaming,
       websearch:websearchTools,
@@ -307,13 +360,30 @@ export const localStub = {
 };
 
 
+export const config = {
+  serverUrl: 'http://localhost:5174',
+  appId:appParams.appId,
+  functionsVersion: functionsVersion !== null && functionsVersion !== undefined ? functionsVersion : undefined,
+  model: 'defaultModelName', // Replace with actual model name
+  entityEndpoint: ['http://localhost:9200',"https://eu-vector-cloud.ngrok.dev"],
+  headers: {
+    "Content-Type": "application/json",
+  },
+  capabilities: {},
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "why is the sky blue" }
+  ],
+  ollamaEndpoints: ["http://localhost:11434","https://christy-ramentaceous-verbatim.ngrok-free.de"],
+  model: "qwen3:0.6b",
+  query:"why is the sky blue"
+};
 
 
-export const defaultClient = createClient({
-        serverUrl: "http://localhost:5174",
-        appId,
-        functionsVersion: functionsVersion !== null && functionsVersion !== void 0 ? functionsVersion : undefined,
-        headers: {},
-    });
-    
-export const client = _local ? localStub : defaultClient;
+export const defaultClient = createClient(config);
+
+export const client = _local ? defaultClient : defaultClient;
+
+
+
+

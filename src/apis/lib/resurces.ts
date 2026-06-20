@@ -1,6 +1,6 @@
 
 export async function fetchModelIds(): Promise<string[]> {
-  const response = await fetch('https://christy-ramentaceous-verbatim.ngrok-free.dev/v1/models');
+  const response = await fetch('http://localhost:11434/v1/models');
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -8,7 +8,7 @@ export async function fetchModelIds(): Promise<string[]> {
   return data.data.map((model: { id: string }) => model.id);
 }
 
-async function fetchModelCapabilities(modelId: string): Promise<any> {
+async function fetchModelCapabilities(modelId){
   const response = await fetch('http://localhost:11434/api/show', {
     method: 'POST',
     headers: {
@@ -16,6 +16,7 @@ async function fetchModelCapabilities(modelId: string): Promise<any> {
     },
     body: JSON.stringify({
       model: modelId,
+      stream: true,
     }),
   });
   if (!response.ok) {
@@ -29,7 +30,46 @@ async function fetchModelCapabilities(modelId: string): Promise<any> {
     model_info: data.model_info,
   };
 }
-async function capabel() {
-    const modelIds = await fetchModelIds();
-    return modelIds;
+
+
+export async function capabel(s) {
+  const modelIds = await fetchModelIds();
+
+  let allTools = {};
+
+  for (const model of modelIds) {
+    try {
+      const info = await fetchModelCapabilities(model);
+
+
+         for (const tool of info.capabilities) {
+            if(info.modified) {       
+            if (!allTools[tool]) {
+              allTools[tool]=[];
+
+             allTools[tool][model] = info.model_info['general.parameter_count'];
+
+             
+            } else {
+              if(!allTools[tool][model]) {
+                 
+                     
+                allTools[tool][model]= info.model_info['general.parameter_count'];
+     
+              }else{
+
+                 
+                 
+               allTools[tool][model]= info.model_info['general.parameter_count'];
+
+
+              }
+            }
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching capabilities for model ${model}: ${error.message}`);
+    }
+  }
+  return allTools;
 }

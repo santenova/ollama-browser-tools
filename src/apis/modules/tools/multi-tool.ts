@@ -64,7 +64,7 @@ export async function multiTool(model: string) {
       content: `What is the temperature in ${city}? and what are the weather conditions in ${city2}?`,
     },
   ]
-  console.log('----- Prompt:', messages[0].content, '\n')
+  console.log('multiTool\t----- Prompt:', messages[0].content, '\n')
 
   const ollama = new Ollama()
   const availableFunctions = {
@@ -92,13 +92,13 @@ export async function multiTool(model: string) {
         const functionToCall = availableFunctions[tool.function.name]
         if (functionToCall) {
           console.log(
-            '\nCalling function:',
+            '\nmultiTool\t Calling function:',
             tool.function.name,
             'with arguments:',
             tool.function.arguments,
           )
           const output = functionToCall(tool.function.arguments)
-          console.log('> Function output:', output, '\n')
+          console.log('multiTool\t> Function output:', output, '\n')
 
           messages.push(chunk.message)
           messages.push({
@@ -107,7 +107,7 @@ export async function multiTool(model: string) {
             tool_name: tool.function.name,
           })
         } else {
-          console.log('Function', tool.function.name, 'not found')
+          console.log('multiTool\tFunction', tool.function.name, 'not found')
         }
       }
     }
@@ -131,17 +131,17 @@ export async function multiTool(model: string) {
       }
       if (chunk.message.content) {
         if (!doneThinking) {
-          console.log('\n----- Final result:')
+          console.log('\nmultiTool\t----- Final result:')
           doneThinking = true
         }
         process.stdout.write(chunk.message.content)
       }
       if (chunk.message.tool_calls) {
-        console.log('Model returned tool calls:')
+        console.log('multiTool\tModel returned tool calls:')
         console.log(chunk.message.tool_calls)
       }
     }
   } else {
-    console.log('No tool calls returned')
+    console.log('multiTool\tNo tool calls returned')
   }
 }

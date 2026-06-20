@@ -1,18 +1,11 @@
+// Import necessary modules
+import { appParams, functionsVersion } from "./apis/lib/app-params.ts";
+import { config,client,createClient2,createClient,updateConfig, localStorage, dumpObject, setup } from "./apis/client";
 
-import { client, localStorage, dumpObject} from "./apis/client";
+// Update the model name
 
+client.integrations.Core.capabilities(client);
 
-
-const ollamaProxy = client.integrations.Core.ollamaProxy;
-const capabilities = client.integrations.Core.capabilities();
-
-
-
-console.log({client:client, input:client.params,ollama:ollamaProxy,
-    capabilities:capabilities,
-                               run: undefined});
-
-
-console.log({thinking:client.integrations.Core.thinking(),
-                               tools: client.integrations.Core.toolbox(),
-                               websearch: client.integrations.Core.websearch()});
+config.model = "qwen3:latest";
+client.setConfig(config);
+console.log(client);
