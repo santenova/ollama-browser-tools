@@ -382,3 +382,6 @@ export const baseClient = _local ? defaultClient : createclientWithFallback(defa
 baseClient.entities = db;
 
 export const client = createclientWithFallback(baseClient);
+
+
+const { isEntityEnabled, getEntity, createEntity, updateEntity } = db;
