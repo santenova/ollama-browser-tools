@@ -32,7 +32,7 @@ async function fetchModelCapabilities(modelId){
 }
 
 
-export async function capabel(s) {
+export async function capabel() {
   const modelIds = await fetchModelIds();
 
   let allTools = {};

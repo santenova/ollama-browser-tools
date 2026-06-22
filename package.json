@@ -10,6 +10,8 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "axios": "^1.18.0"
+    "axios": "^1.18.0",
+    "express": "^5.2.1",
+    "Ollama": "npm:ollama@^0.6.3"
   }
 }

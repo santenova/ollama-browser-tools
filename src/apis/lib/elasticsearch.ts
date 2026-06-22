@@ -1,54 +1,73 @@
 
-var data = {};
-const localStorage = {
-  setItem: function(key, value) {
-    data[key] = value;
-    return data[key];
-  },
-  getItem: function(key) {
-    return (key in data) ? data[key] : undefined;
-  },
-  removeItem: function(key) {
-    delete data[key];
-    return undefined;
-  },
-  clear: function() {
-    data = {};
-    return data;
-  }
-};
-
-
-
-
+    
 const ES_CONFIG_KEY = 'elasticsearch_config';
-const ES_CONFIG_VERSION = 8; // bump to force-reset stored config and pick up new auto-detected entities
 
-export function isLocalMode() {
-  try {
-    const prefix = import.meta.env.APP_PREFIX;
-    const s = localStorage.getItem(prefix + "_settings");
-    return s ? JSON.parse(s).local_mode === true : false;
-  } catch {
-    return false;
-  }
-}
-
-export const serverUrl = "https://eu-vector-cloud.ngrok.dev";
-
-
-// All available entities in the app (base set — new ones are auto-detected at runtime)
+// All available entities in the app
 const BASE_ENTITIES = [
-  { name: 'Persona', defaultIndex: 'prompt-hub-persona'},
-  { name: 'Template', defaultIndex: 'prompt-hub-template'},
-  { name: 'ChatSession', defaultIndex: 'prompt-hub-session'},
-  { name: 'Scenario', defaultIndex: 'prompt-hub-scenario'},
-  { name: 'DevilsAdvocateResult', defaultIndex: 'prompt-hub-devils'},
-  { name: 'AnalogyBuilderResult', defaultIndex: 'prompt-hub-analogy'},
-  { name: 'PersonaDebateResult', defaultIndex: 'prompt-hub-debate'},
-  { name: 'ContentRepurposerResult', defaultIndex: 'prompt-hub-repurpose'},
-  { name: 'StructureArchitectResult', defaultIndex: 'prompt-hub-outline'},
-  { name: 'GeneratorList', defaultIndex: 'prompt-hub-generator-list'},
+    { name: 'AgentMetrics', defaultIndex: 'prompt-hub-agentmetrics'},
+    { name: 'AgentMonitoringLog', defaultIndex: 'prompt-hub-agentmonitoringlog'},
+    { name: 'AgentPackage', defaultIndex: 'prompt-hub-agentpackage'},
+    { name: 'AgentReview', defaultIndex: 'prompt-hub-agentreview'},
+    { name: 'AgentSubscription', defaultIndex: 'prompt-hub-agentsubscription'},
+    { name: 'AgentTraining', defaultIndex: 'prompt-hub-agenttraining'},
+    { name: 'AlertConfiguration', defaultIndex: 'prompt-hub-alertconfiguration'},
+    { name: 'APIConfiguration', defaultIndex: 'prompt-hub-apiconfiguration'},
+    { name: 'APIKey', defaultIndex: 'prompt-hub-apikey'},
+    { name: 'APISettings', defaultIndex: 'prompt-hub-apisettings'},
+    { name: 'Bookmark', defaultIndex: 'prompt-hub-bookmark'},
+    { name: 'ChatMessageAnnotation', defaultIndex: 'prompt-hub-chatmessageannotation'},
+    { name: 'ChatSessionParticipant', defaultIndex: 'prompt-hub-chatsessionparticipant'},
+    { name: 'ChatSessionVersion', defaultIndex: 'prompt-hub-chatsessionversion'},
+    { name: 'CompanySettings', defaultIndex: 'prompt-hub-companysettings'},
+    { name: 'ContentExample', defaultIndex: 'prompt-hub-contentexample'},
+    { name: 'ContentHistory', defaultIndex: 'prompt-hub-contenthistory'},
+    { name: 'CustomAgentVersion', defaultIndex: 'prompt-hub-customagentversion'},
+    { name: 'CustomTool', defaultIndex: 'prompt-hub-customtool'},
+    { name: 'DocumentExport', defaultIndex: 'prompt-hub-documentexport'},
+    { name: 'FineTuningJob', defaultIndex: 'prompt-hub-finetuningjob'},
+    { name: 'KnowledgeBase', defaultIndex: 'prompt-hub-knowledgebase'},
+    { name: 'LibraryItem', defaultIndex: 'prompt-hub-libraryitem'},
+    { name: 'LLMLog', defaultIndex: 'prompt-hub-llmlog'},
+    { name: 'Notification', defaultIndex: 'prompt-hub-notification'},
+    { name: 'Persona', defaultIndex: 'prompt-hub-persona'},
+    { name: 'PersonaComment', defaultIndex: 'prompt-hub-personacomment'},
+    { name: 'PlaceholderPreset', defaultIndex: 'prompt-hub-placeholderpreset'},
+    { name: 'Project', defaultIndex: 'prompt-hub-project'},
+    { name: 'PublishingAPIKey', defaultIndex: 'prompt-hub-publishingapikey'},
+    { name: 'SlackMessage', defaultIndex: 'prompt-hub-slackmessage'},
+    { name: 'Template', defaultIndex: 'prompt-hub-template'},
+    { name: 'TemplateComment', defaultIndex: 'prompt-hub-templatecomment'},
+    { name: 'TestCase', defaultIndex: 'prompt-hub-testcase'},
+    { name: 'TestHistory', defaultIndex: 'prompt-hub-testhistory'},
+    { name: 'TrainingDataset', defaultIndex: 'prompt-hub-trainingdataset'},
+    { name: 'UserAPIKey', defaultIndex: 'prompt-hub-userapikey'},
+    { name: 'VectorDocument', defaultIndex: 'prompt-hub-vectordocument'},
+    { name: 'VoiceChat', defaultIndex: 'prompt-hub-voicechat'},
+    { name: 'Workflow', defaultIndex: 'prompt-hub-workflow'},
+    { name: 'WorkflowComponent', defaultIndex: 'prompt-hub-workflowcomponent'},
+    { name: 'WorkspaceMember', defaultIndex: 'prompt-hub-workspacemember'},
+    { name: 'GenerationPreset', defaultIndex: 'prompt-hub-generationpreset'}
+  /**
+   *
+  { name: 'Template', defaultIndex: 'templates', icon: FileText },
+  { name: 'Persona', defaultIndex: 'personas', icon: Users },
+  { name: 'TestCase', defaultIndex: 'testcases'},
+  { name: 'TemplateComment', defaultIndex: 'template_comments'},
+  { name: 'AgentPackage', defaultIndex: 'agent_packages'},
+  { name: 'AgentSubscription', defaultIndex: 'agent_subscriptions'},
+  { name: 'AgentReview', defaultIndex: 'agent_reviews'},
+  { name: 'APIKey', defaultIndex: 'api_keys'},
+  { name: 'TrainingDataset', defaultIndex: 'training_datasets'},
+  { name: 'AgentTraining', defaultIndex: 'agent_training'},
+  { name: 'CustomAgentVersion', defaultIndex: 'custom_agent_versions'},
+  { name: 'AlertConfiguration', defaultIndex: 'alert_configurations'},
+  { name: 'Notification', defaultIndex: 'notifications'},
+  { name: 'AgentMonitoringLog', defaultIndex: 'agent_monitoring_logs'},
+  { name: 'AgentMetrics', defaultIndex: 'agent_metrics'},
+  { name: 'Bookmark', defaultIndex: 'bookmarks'},
+  { name: 'FineTuningJob', defaultIndex: 'fine_tuning_jobs'},
+  { name: 'VectorDocument', defaultIndex: 'vector_documents'},
+   * **/
 ];
 
 const BASE_ENTITY_NAMES = new Set(BASE_ENTITIES.map(e => e.name));
@@ -125,13 +144,8 @@ const saveElasticsearchConfig = (config) => {
 };
 
 export const useElasticsearchDataSource = () => {
-  const [config, setConfig] = useState(getElasticsearchConfig);
+  const config = getElasticsearchConfig;
 
-  const isEnabled = () => config.endpoint; // config.enabled && 
-
-  const isEntityEnabled = (entityName) => {
-    return isEnabled() && config.enabledEntities?.includes(entityName);
-  };
 
   const ensureIndexExists = async (endpoint, index) => {
     try {
@@ -392,8 +406,8 @@ export const useElasticsearchDataSource = () => {
       setConfig(newConfig);
       saveElasticsearchConfig(newConfig);
     },
-    isEnabled: isEnabled(),
-    isEntityEnabled,
+
+    getEntity,
     getEntity,
     createEntity: createInElasticsearch,
     updateEntity: updateInElasticsearch,
@@ -440,6 +454,14 @@ export default function ElasticsearchDataSource() {
   };
 
   const testConnection = async () => {
+    if (!config.endpoint) {
+      toast({
+        title: "No Endpoint",
+        description: "Please enter an Elasticsearch endpoint URL",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setConnectionStatus('checking');
     setIsLoading(true);
@@ -600,36 +622,4 @@ export default function ElasticsearchDataSource() {
       setIsSyncing(false);
     }
   }, [config.endpoint, config.indices, isSyncing]);
-
-  // Start/restart periodic sync whenever interval or connection changes
-  useEffect(() => {
-    if (syncTimerRef.current) clearInterval(syncTimerRef.current);
-    if (connectionStatus === 'connected' && config.endpoint && syncInterval > 0) {
-      // Periodic sync is differential (force=false) — only syncs entities with count mismatch
-      syncTimerRef.current = setInterval(() => runSync({ force: false }), syncInterval * 1000);
-    }
-    return () => { if (syncTimerRef.current) clearInterval(syncTimerRef.current); };
-  }, [connectionStatus, syncInterval, config.endpoint]);
-
-  // Auto-test connection on mount if endpoint is configured
-  React.useEffect(() => {
-    if (config.endpoint) {
-      testConnection();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleToggleEnabled = (enabled) => {
-    updateConfig({ enabled });
-    toast({
-      title: enabled ? "Elasticsearch Enabled" : "Elasticsearch Disabled",
-      description: enabled 
-        ? "Selected entities will now load from Elasticsearch" 
-        : "Data will load from the default Base44 database"
-    });
-  };
-
 }
-
-getElasticsearchConfig();
-console.log([ALL_ENTITIES,ElasticsearchDataSource]);
