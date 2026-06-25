@@ -1,16 +1,8 @@
 import { client,config } from './apis/client';
+import { ProblemSolutionClient , generatePersonas,generateDomains } from './apis/modules/solutions/solution';
+
 
 const expertiseAreas = ["Whales","Sharks","Food Chain"];
-
-
-  
-
-
-function getOllamaEndpoint(){
-
-    return config.ollamaEndpoints[1];
-
-}
 
 
 const formData = {
@@ -93,78 +85,7 @@ try {
     } catch (e) {
       // error
     }   */
-  async function generateQuestions(domain)  {
-
-      const expertiseAreas=formData.expertise_areas;
-    
-      const endpoint = getOllamaEndpoint();
-      const model = config.model || 'qwen3:8b';
-      const res = await fetch(`${endpoint}/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          stream: false,
-          messages: [
-            {
-              role: 'user',
-              content: `You are creating test questions in domain [${domain}] to evaluate an AI persona.\n\nPersona Name: ${formData.name}\nPersona Description: ${formData.description}\nExpertise Areas: ${expertiseAreas.join(', ')}\n\nGenerate exactly 10 specific test questions that ONLY cover these expertise areas: ${expertiseAreas.join(', ')}.\nEach question should test deep knowledge in one of the listed expertise areas.\nDo NOT generate questions outside these areas.\n\nReturn ONLY a JSON array of strings, no explanation:\n["question1", "question2", "question3", "question4", "question5", .....]`
-            }
-          ]
-        })
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      
-      const text = data.choices?.[0]?.message?.content || '';
-
-      console.log(text);
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        if (Array.isArray(parsed)) {
-            return parsed.slice(0, 9);
-        }
-      }
-      return match;
-   
-  };
-
-  async function generateDomains(manifest)  {
-    
-      const endpoint = getOllamaEndpoint();
-      const model = config.model || 'qwen3:8b';
-      const res = await fetch(`${endpoint}/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          stream: false,
-          messages: [
-            {
-              role: 'user',
-              content: `Based on the Manifest: [${manifest}] nomminate the 7 most Domains qith most impact on the problem is best structured in. select 2 Experts by Job title or name of profession no names based on each domain 2 Personas never use human names no halucinations \n\nReturn array of JSON domain objects `
-            }
-          ]
-        })
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      
-      const text = data.choices?.[0]?.message?.content || '';
-
-      console.log(text);
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        if (Array.isArray(parsed)) {
-            return parsed;
-        }
-      }
-      return match;
-   
-  };
-
+  
   export async function testQuestion(question, idx)  {
 
 
@@ -487,7 +408,14 @@ export const tryRestoreclient = async () => {
 
 
 console.log(getESEndpoint());
-forceElasticsearchMode();;
+forceElasticsearchMode();
+
+
+const solution = new ProblemSolutionClient(config);
+
+const pipe = solution.createSolutionPipeline();
+
+console.log(pipe);
 
 const d = generateDomains("as solution to achieve OCEAN CLEANUP THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED") || [];
 
@@ -500,7 +428,9 @@ for (let ddx = 0; ddx < d.length; ddx++) {
 
     
      p = generatePersonas(d[ddx],ddx);
-     qw= generateQuestions(d[ddx],ddx);
+     console.log(p);
+     qw= generateQuestions(d[ddx]);
+     console.log(qw);
      for (let idx = 0; idx < qw.length; idx++) {
       console.log(JSON.stringify([d[ddx],qw[ss],ddx,idx]));
 

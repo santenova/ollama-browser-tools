@@ -1,8 +1,10 @@
 
+import { config} from "../../client";
+
 /**
  * Streams thoughts and responses from the LLM using vanilla fetch.
  */
-export async function generateQuestions(userPrompt) {
+export async function generateQuestions2(userPrompt) {
   
     
       const formData =  {"name": "Marine Biologist",
@@ -56,7 +58,7 @@ export async function generateQuestions(userPrompt) {
       const chunk = decoder.decode(value);
       const lines = chunk.split('\n');
 
-      for (const line of lines) {
+    for (const line of lines) {
         if (line.trim() === '') continue;
 
         try {
@@ -154,6 +156,83 @@ export  const personasPerDomain = {
     "Domain 1": ["Persona A", "Persona B"],
     "Domain 2": ["Persona C", "Persona D"],
     // Add more domains and personas as needed
+  };
+
+
+
+export async function generateQuestions(domain)  {
+
+      const expertiseAreas=formData.expertise_areas;
+      const endpoint = config.ollamaEndpointS[0] ||  'http://localhost:11434';
+      const model = config.model || 'qwen3:8b';
+      const res = await fetch(`${endpoint}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          messages: [
+            {
+              role: 'user',
+              content: `You are creating test questions in domain [${domain}] to evaluate an AI persona.\n\nPersona Name: ${formData.name}\nPersona Description: ${formData.description}\nExpertise Areas: ${expertiseAreas.join(', ')}\n\nGenerate exactly 10 specific test questions that ONLY cover these expertise areas: ${expertiseAreas.join(', ')}.\nEach question should test deep knowledge in one of the listed expertise areas.\nDo NOT generate questions outside these areas.\n\nReturn ONLY a JSON array of strings, no explanation:\n["question1", "question2", "question3", "question4", "question5", .....]`
+            }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      
+      const text = data.choices?.[0]?.message?.content || '';
+
+      console.log(text);
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed)) {
+            return parsed.slice(0, 9);
+        }
+      }
+      return match;
+   
+  };
+
+export  async function generateDomains(manifest)  {
+    
+      const endpoint = config.ollamaEndpoints[0] ||  'http://localhost:11434';
+      const model = config.model || 'qwen3:8b';
+      const res = await fetch(`${endpoint}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          messages: [
+            {
+              role: 'user',
+              content: `Based on the Manifest: [${manifest}] nomminate the 7 most Domains qith most impact on the problem is best structured in. select 2 Experts by Job title or name of profession no names based on each domain 2 Personas never use human names no halucinations \n\nReturn array of JSON domain objects `
+            }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      
+      const text = data.choices?.[0]?.message?.content || '';
+
+      console.log(text);
+      const match = text.match(/\[[\s\S]*\]/);
+    try {
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed)) {
+            return parsed;
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
+      return match;
+   
   };
 
 export async function optimizePrompt(prompt) {
@@ -269,7 +348,12 @@ export class ProblemSolutionClient {
       console.log(`Step ID: ${step.id} - Prompt: ${step.prompt}`);
       console.log(`Step ID: ${step.id} - Response: ${step.response}\n`);
     }
-    
+
+     // Determine capabilities for each step
+    if (step.id === "step001") {
+      domains = await generateDomains(step.prompt);
+      console.log(`domains:`, domains);
+    }
     // Determine capabilities for each step
     if (step.id === "step008") {
       const capabilities = await capabel(step.prompt);
@@ -308,13 +392,15 @@ export class ProblemSolutionClient {
   console.log(`Assessment Step ID: ${solutionPipeline.ProblemSolution[0].assessment.id} - Response: ${assessmentResponse}`);
 }
 
-  async createSolutionPipeline() {
+  async createSolutionPipeline(task) {
    
     // Gather pre-pipeline data and store it in localStorage
+    
     await capabel();
+    this.task = task;
     const step1Prompt = `
       Analyse and re-word the task to reflect the true scope. Create a Task manifest, continue with giving an extensive Introduction Point by Point, conclude with the summary of the Task manifest.
-      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED
+      Task: ["${task}"]
     `;
     const step1Response = await this.executeStep(step1Prompt, 1);
 
@@ -322,7 +408,7 @@ export class ProblemSolutionClient {
     // Step 2: Define 7 core components (domains) of the Solution Flower and query personas per domain
     const step2Prompt = `
       Define 7 core components (domains) of the Solution Flower to achieve the Task solution.
-      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED {}
+      Task: ["${task}"]
       return only structured JSON only like: ["Domain 1", "Domain 2", "Domain 3", "Domain 4", "Domain 5", "Domain 6", "Domain 7"]`;
 
         
@@ -416,144 +502,4 @@ export class ProblemSolutionClient {
     return this.solutionPipeline;
   }
   
-
-
-
-
-  getSolutionPipeline() {
-    return this.solutionPipeline;
-  }
 }
-// Sample solution pipeline
-const solutionPipeline = {
-  "ProblemSolution": [
-    {
-      "systemPromptDefaultIdentity": "Dr Know",
-      "userPrompt": "as solution to achieve OCEAN CLEANUP THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED",
-      "details": "4 Steps | 1 Assessment",
-      "description": "Master the fundamentals of strategy, planning, and understanding scope and dynamics of the Task.",
-      "steps": [
-        {
-          "id": "step001",
-          "prompt": "systemPromptDefaultIdentity"
-        },
-        {
-          "id": "step002",
-          "prompt": "userPrompt"
-        },
-        {
-          "id": "step003",
-          "prompt": "improvedUserPrompt"
-        },
-        {
-          "id": "step004",
-          "prompt": "\n      Analyse and re-word the task to reflect the true scope. Create a Task manifest, continue with giving an extensive Introduction Point by Point, conclude with the summary of the Task manifest.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    "
-        },
-        {
-          "id": "step005",
-          "prompt": "\n      Define 7 core components (domains) of the Solution Flower to achieve the Task solution based on improvedUserPrompt.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-          "subSteps": [
-            {
-              "id": "step005-1",
-              "prompt": "\n        Identify the key domains for Ocean Cleanup.\n      "
-            },
-            {
-              "id": "step005-2",
-              "prompt": "\n        Define the scope and objectives of each domain.\n      "
-            },
-            {
-              "id": "step005-3",
-              "prompt": "\n        Determine the resources required for each domain.\n      "
-            },
-            {
-              "id": "step005-4",
-              "prompt": "\n        Establish timelines and milestones for each domain.\n      "
-            },
-            {
-              "id": "step005-5",
-              "prompt": "\n        Assign responsibilities to team members for each domain.\n      "
-            }
-          ]
-        },
-        {
-          "id": "step006",
-          "prompt": "\n      Select a domain based on improvedUserPrompt.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-          "response": "Selected Domain: Domain 1"
-        },
-        {
-          "id": "step007",
-          "prompt": "\n      Perform persona entity search based on the selected domain.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-          "response": {
-            "Domain 1": ["Persona A", "Persona B"]
-          }
-        },
-        {
-          "id": "step008",
-          "prompt": "\n      Analyze capabilities based on improvedUserPrompt.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    "
-        },
-        {
-         "id": "step009",
-          "prompt": "\n      Declaration of SMART Goals & KPIs across 7 domains of the Task solution flower.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-          "subSteps": [
-            {
-              "id": "step009-1",
-              "prompt": "\n        Define SMART Goals for each domain.\n      "
-            },
-            {
-              "id": "step009-2",
-              "prompt": "\n        Identify Key Performance Indicators (KPIs) for each domain.\n      "
-            }
-          ]
-        },
-        {
-          "id": "step010",
-          "prompt": "\n      Understanding Your Target.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-          "subSteps": [
-            {
-              "id": "step010-1",
-              "prompt": "\n        Identify the target audience for the Ocean Cleanup project.\n      "
-            },
-            {
-              "id": "step010-2",
-              "prompt": "\n        Understand the needs and expectations of the target audience.\n      "
-            }
-          ]
-        }
-      ],
-      "solutionFlower": {
-        "domains": [],
-        "personasPerDomain": {}
-      },
-      "assessment": {
-        "id": "step011",
-        "prompt": "\n      Assessment Time: Planning and resource estimation.\n      Task: As a solution to achieve OCEAN CLEANUP, THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED\n    ",
-        "subSteps": [
-          {
-            "id": "step011-1",
-            "prompt": "\n        Evaluate the resources required for each domain.\n      "
-          },
-          {
-            "id": "step011-2",
-            "prompt": "\n        Estimate the time and budget needed for the project.\n      "
-          }
-        ]
-      }
-    }
-  ]
-};
-
-// Import the capabel function
-// Function to simulate chat session
-
-
-// Execute the pipeline
-/*
- *
- *
-            setTimeout(() => {
-                resolve([`Analyse Incomming prompt: ${prompt} based on known data elect an expert persona for steps ahead also list domains the prompt can be assosiated with`,
-                         `Use elected Persona for optimzing Incomming prompt: ${prompt} `,
-                         `Process Optimized: ${prompt`]);
-            },1100);
- *
- * */

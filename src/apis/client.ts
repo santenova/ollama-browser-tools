@@ -698,7 +698,7 @@ export function createClient(config: {
     esEndpoint: getElasticsearchEndpoint(),
   };
 
-  console.log(client);
+  // console.log(client);
   return client;
 }
 
