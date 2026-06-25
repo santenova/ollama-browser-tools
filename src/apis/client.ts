@@ -639,7 +639,9 @@ export function createClient(config: {
     },
     config: configResolved,
     getEsConfig,
-    saveEsConfig,
+    saveEsConfig: async (newConfig) => {
+      saveEsConfig(newConfig);
+    },
     integrations: {
         Core: {
           vision: async () => {},
