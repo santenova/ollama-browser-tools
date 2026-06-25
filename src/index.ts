@@ -3,34 +3,32 @@ import { appParams, functionsVersion } from "./apis/lib/app-params.ts";
 
 import { config,client,baseClient,createClient2,createClient,updateConfig, localStorage, dumpObject, setup } from "./apis/client";
 
-import { capabel } from "./apis/lib/resurces.ts";
+// import { ProblemSolutionClient,processSolutionPipeline } from "./apis/modules/solutions/solution.ts";
 
+// capabilities object
+// client.capabilities = await capabel();
+config.prompt = 'who is alice';
+config.model = "qwen3:latest";
+client.setConfig(config);
+const nextMessage = 'I am Alice.';
 
 // Usage example
-(async () => {
-    // capabilities object
-    client.capabilities = await capabel();
-    })();
+( () => {
     
     config.model = "qwen3:latest";
     client.setConfig(config);
-    // entitys    
-    console.log(client.entities.config);
+    const data = client.integrations.Core.InvokeLLM('llama3:latest', nextMessage)
     
 
-    // asyncc
-    //console.log({thinking:step1:step1.thinking(config.model,config.prompt)});
 
-    console.log(client);
-
-
-(async () => {
-    
-const nextMessage = 'I am Alice.';
-client.integrations.Core.InvokeLLM('llama3:latest', nextMessage);
-
-    console.log(client.entities);
+    console.log([config,data,client]);
 
 })();
+/*
+const solution = new ProblemSolutionClient(config);
 
-   
+solution.createSolutionPipeline();
+
+
+
+*/
