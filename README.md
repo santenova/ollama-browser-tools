@@ -32,14 +32,14 @@ docker exec -it ollama ollama pull llava:7b;
 docker exec -it ollama ollama pull qwen3:8b;
 docker exec -it ollama ollama pull nomic-embed-text:latest;
 ollama list
-```
+
 
 NAME                       ID              SIZE      MODIFIED       
 nomic-embed-text:latest    0a109f422b47    274 MB    3 seconds ago     
 qwen3:8b                   500a1f067a9f    5.2 GB    20 seconds ago    
 llava:7b                   8dd30f6b0cb1    4.7 GB    3 minutes ago     
 qwen3:0.6b                 7df6b6e09427    522 MB    5 minutes ago     
-
+```
 ## Elasticsearch
 ```
 docker run \
@@ -57,7 +57,7 @@ npm install;
 npm run postinstall;
 npm  run ingest;
 npm run start;
-```
+``` q
 
 ## how it should look
 
