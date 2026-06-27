@@ -57,7 +57,8 @@ npm install;
 npm run postinstall;
 npm  run ingest;
 npm run start;
-``` q
+```
+
 
 ## how it should look
 
