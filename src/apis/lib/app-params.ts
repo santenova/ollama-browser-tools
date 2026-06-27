@@ -16,7 +16,7 @@ export const localStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 
 export const token = "_token_";
 
 // Derive storage prefix from appId: lowercase, no spaces, use underscores
-export const appId = "prompthub-App-Id";
+export const appId = "ollama-browser-tools";
 export const functionsVersion = null;
 
 const toSnakeCase = (str: string): string =>
