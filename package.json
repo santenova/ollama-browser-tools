@@ -1,7 +1,7 @@
 {
   "main": "src/apis/client.ts",
   "scripts": {
-    "start": "tsx src/apis/client.test.ts",
+    "start": "tsx src/client.test.ts",
     "postinstall": "cd data && python3 -m venv venv; ./venv/bin/pip3 install -r requirements.txt",
     "ingest": "cd data; ./venv/bin/python3 ./import.py --url http://127.0.0.1:9200 --file ./Persona.json --index sample-prompt-persona; ./venv/bin/python3 ./import.py --url http://127.0.0.1:9200 --file ./Template.json --index sample-prompt-template"
   },
