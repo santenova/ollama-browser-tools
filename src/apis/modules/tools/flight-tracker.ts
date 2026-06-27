@@ -1,94 +1,138 @@
-import ollama from 'ollama'
+/**
+ * Flight tracker — Ollama OpenAI-compatible tool-calling demo for flight times.
+ *
+ * The previous version of this file used the `ollama` npm SDK directly, but
+ * that package is not installed in this project. The function below mirrors
+ * the pattern used by `multi-tool.ts`: it relies on plain `fetch` against the
+ * `/v1/chat/completions` endpoint so it works in both browser and Node.
+ */
+
+interface ChatMessage {
+  role: string;
+  content: string;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  [key: string]: any;
+}
+
+interface FlightTrackerConfig {
+  ollamaEndpoints: string[];
+  model?: string | null;
+  defaultModel: string;
+}
 
 // Simulates an API call to get flight times
 // In a real application, this would fetch data from a live database or API
 function getFlightTimes(args: { [key: string]: any }) {
-  // this is where you would validate the arguments you received
-  const departure = args.departure
-  const arrival = args.arrival
+  const departure = args.departure;
+  const arrival = args.arrival;
 
-  const flights = {
+  const flights: Record<string, { departure: string; arrival: string; duration: string }> = {
     'LGA-LAX': { departure: '08:00 AM', arrival: '11:30 AM', duration: '5h 30m' },
     'LAX-LGA': { departure: '02:00 PM', arrival: '10:30 PM', duration: '5h 30m' },
     'LHR-JFK': { departure: '10:00 AM', arrival: '01:00 PM', duration: '8h 00m' },
     'JFK-LHR': { departure: '09:00 PM', arrival: '09:00 AM', duration: '7h 00m' },
     'CDG-DXB': { departure: '11:00 AM', arrival: '08:00 PM', duration: '6h 00m' },
     'DXB-CDG': { departure: '03:00 AM', arrival: '07:30 AM', duration: '7h 30m' },
-  }
+  };
 
-  const key = `${departure}-${arrival}`.toUpperCase()
-  return JSON.stringify(flights[key] || { error: 'Flight not found' })
+  const key = `${departure}-${arrival}`.toUpperCase();
+  return JSON.stringify(flights[key] || { error: 'Flight not found' });
 }
 
-export async function flightTracker(model: string) {
-  // Initialize conversation with a user query
-  let messages = [
-    {
-      role: 'user',
-      content: 'What is the flight time from New York (LGA) to Los Angeles (LAX)?',
-    },
-  ]
-
-  // First API call: Send the query and function description to the model
-  const response = await ollama.chat({
-    model: 'qwen3:8b',
-    messages: messages,
-    tools: [
-      {
-        type: 'function',
-        function: {
-          name: 'get_flight_times',
-          description: 'Get the flight times between two cities',
-          parameters: {
-            type: 'object',
-            properties: {
-              departure: {
-                type: 'string',
-                description: 'The departure city (airport code)',
-              },
-              arrival: {
-                type: 'string',
-                description: 'The arrival city (airport code)',
-              },
-            },
-            required: ['departure', 'arrival'],
-          },
+const getFlightTimesTool = {
+  type: 'function' as const,
+  function: {
+    name: 'get_flight_times',
+    description: 'Get the flight times between two cities',
+    parameters: {
+      type: 'object',
+      required: ['departure', 'arrival'],
+      properties: {
+        departure: {
+          type: 'string',
+          description: 'The departure city (airport code)',
+        },
+        arrival: {
+          type: 'string',
+          description: 'The arrival city (airport code)',
         },
       },
-    ],
-  })
-  // Add the model's response to the conversation history
-  messages.push(response.message)
+    },
+  },
+};
 
-  // Check if the model decided to use the provided function
-  if (!response.message.tool_calls || response.message.tool_calls.length === 0) {
-    console.log("The model didn't use the function. Its response was:")
-    console.log(response.message.content)
-    return
-  }
+/**
+ * Standalone flightTracker — calls Ollama's OpenAI-compatible
+ * /v1/chat/completions endpoint with a mock flight-times tool.
+ * Accepts an optional prompt (defaults to the LGA→LAX demo) and
+ * returns the final assistant content string.
+ */
+export async function flightTracker(opts: {
+  prompt?: string;
+  model?: string | null;
+  ollamaEndpoints: string[];
+  defaultModel: string;
+}) {
+  const {
+    prompt,
+    model: requestedModel = null,
+    ollamaEndpoints,
+    defaultModel,
+  } = opts || {};
+
+  const host =
+    ollamaEndpoints[1] || ollamaEndpoints[0] || 'http://localhost:11434';
+  const useModel = requestedModel || defaultModel || 'qwen3:0.6b';
+
+  const availableFunctions: Record<string, (args: { [key: string]: any }) => string> = {
+    get_flight_times: getFlightTimes,
+  };
+
+  const messages: ChatMessage[] = [
+    {
+      role: 'user',
+      content: prompt || 'What is the flight time from New York (LGA) to Los Angeles (LAX)?',
+    },
+  ];
+
+  // First pass: ask model what tools to call
+  const res1 = await fetch(`${host}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: useModel, messages, tools: [getFlightTimesTool], stream: false }),
+  });
+  if (!res1.ok) throw new Error(`flightTracker error: ${res1.status}`);
+  const data1 = await res1.json();
+  const assistantMsg = data1?.choices?.[0]?.message;
+  if (!assistantMsg) return '';
+
+  messages.push(assistantMsg);
 
   // Process function calls made by the model
-  if (response.message.tool_calls) {
-    const availableFunctions = {
-      get_flight_times: getFlightTimes,
+  if (assistantMsg.tool_calls?.length) {
+    for (const tool of assistantMsg.tool_calls) {
+      const fn = availableFunctions[tool.function?.name];
+      if (fn) {
+        const functionResponse = fn(tool.function.arguments as any);
+        messages.push({
+          role: 'tool',
+          content: functionResponse,
+          tool_call_id: tool.id,
+        } as ChatMessage);
+      }
     }
-    for (const tool of response.message.tool_calls) {
-      const functionToCall = availableFunctions[tool.function.name]
-      const functionResponse = functionToCall(tool.function.arguments)
-      console.log('functionResponse', functionResponse)
-      // Add function response to the conversation
-      messages.push({
-        role: 'tool',
-        content: functionResponse,
-      })
-    }
+
+    // Second pass: get final response from the model
+    const res2 = await fetch(`${host}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: useModel, messages, stream: false }),
+    });
+    if (!res2.ok) throw new Error(`flightTracker final error: ${res2.status}`);
+    const data2 = await res2.json();
+    return data2?.choices?.[0]?.message?.content ?? '';
   }
 
-  // Second API call: Get final response from the model
-  const finalResponse = await ollama.chat({
-    model: 'qwen3:8b',
-    messages: messages,
-  })
-  console.log(finalResponse.message.content)
+  return assistantMsg.content ?? '';
 }
-

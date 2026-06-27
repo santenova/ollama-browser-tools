@@ -65,8 +65,9 @@ export const getAppParams = () => {
     localStorage.removeItem('token');
   }
   return {
-    appId:            getAppParamValue('app_id',            { defaultValue: undefined }),
+    appId:            getAppParamValue('app_id',            { defaultValue: import.meta.env?.CLIENT_APP_ID ?? undefined }),
     appPrefix:        getAppParamValue('app_prefix',        { defaultValue: undefined }),
+    serverUrl:        getAppParamValue('server_url',        { defaultValue: import.meta.env?.CLIENT_BACKEND_URL ?? undefined }),
     token:            getAppParamValue('access_token',      { removeFromUrl: true }),
     fromUrl:          getAppParamValue('from_url',          { defaultValue: undefined }),
     functionsVersion: getAppParamValue('functions_version', { defaultValue: undefined }),

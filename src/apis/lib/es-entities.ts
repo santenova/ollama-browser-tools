@@ -1,13 +1,15 @@
 /**
  * Standalone Elasticsearch entity manager.
  *
- * Creates a Proxy-based `entities` object compatible with the Base44 SDK
+ * Creates a Proxy-based `entities` object
  * entity interface (list, filter, get, create, update, delete, deleteMany,
  * bulkCreate, bulkUpdate, updateMany, subscribe) — all backed directly by
  * Elasticsearch.
  *
  * No React, no axios, no circular client dependency — pure fetch + ES.
  */
+
+import { localStorage } from './app-params.ts';
 
 const ES_CONFIG_KEY = 'elasticsearch_config';
 const ES_CONFIG_VERSION = 5; // bumped: proper index mappings + .keyword sort
@@ -31,58 +33,8 @@ const detectEsEndpoint = () => {
 // ---------------------------------------------------------------------------
 
 const BASE_ENTITIES = [
-  { name: 'AgentMetrics', defaultIndex: 'prompt-hub-agentmetrics' },
-  { name: 'AgentMonitoringLog', defaultIndex: 'prompt-hub-agentmonitoringlog' },
-  { name: 'AgentPackage', defaultIndex: 'prompt-hub-agentpackage' },
-  { name: 'AgentReview', defaultIndex: 'prompt-hub-agentreview' },
-  { name: 'AgentSubscription', defaultIndex: 'prompt-hub-agentsubscription' },
-  { name: 'AgentTraining', defaultIndex: 'prompt-hub-agenttraining' },
-  { name: 'AlertConfiguration', defaultIndex: 'prompt-hub-alertconfiguration' },
-  { name: 'APIConfiguration', defaultIndex: 'prompt-hub-apiconfiguration' },
-  { name: 'APIKey', defaultIndex: 'prompt-hub-apikey' },
-  { name: 'APISettings', defaultIndex: 'prompt-hub-apisettings' },
-  { name: 'Bookmark', defaultIndex: 'prompt-hub-bookmark' },
-  { name: 'ChatMessageAnnotation', defaultIndex: 'prompt-hub-chatmessageannotation' },
-  { name: 'ChatSessionParticipant', defaultIndex: 'prompt-hub-chatsessionparticipant' },
-  { name: 'ChatSessionVersion', defaultIndex: 'prompt-hub-chatsessionversion' },
-  { name: 'ChatSession', defaultIndex: 'prompt-hub-session' },
-  { name: 'CompanySettings', defaultIndex: 'prompt-hub-companysettings' },
-  { name: 'ContentExample', defaultIndex: 'prompt-hub-contentexample' },
-  { name: 'ContentHistory', defaultIndex: 'prompt-hub-contenthistory' },
-  { name: 'CustomAgentVersion', defaultIndex: 'prompt-hub-customagentversion' },
-  { name: 'CustomTool', defaultIndex: 'prompt-hub-customtool' },
-  { name: 'DocumentExport', defaultIndex: 'prompt-hub-documentexport' },
-  { name: 'FineTuningJob', defaultIndex: 'prompt-hub-finetuningjob' },
-  { name: 'GeneratorList', defaultIndex: 'prompt-hub-generator-list' },
-  { name: 'GenerationPreset', defaultIndex: 'prompt-hub-generationpreset' },
-  { name: 'KnowledgeBase', defaultIndex: 'prompt-hub-knowledgebase' },
-  { name: 'LibraryItem', defaultIndex: 'prompt-hub-libraryitem' },
-  { name: 'LLMLog', defaultIndex: 'prompt-hub-llmlog' },
-  { name: 'Notification', defaultIndex: 'prompt-hub-notification' },
-  { name: 'Persona', defaultIndex: 'prompt-hub-persona' },
-  { name: 'PersonaComment', defaultIndex: 'prompt-hub-personacomment' },
-  { name: 'PersonaDebateResult', defaultIndex: 'prompt-hub-debate' },
-  { name: 'PlaceholderPreset', defaultIndex: 'prompt-hub-placeholderpreset' },
-  { name: 'Project', defaultIndex: 'prompt-hub-project' },
-  { name: 'PublishingAPIKey', defaultIndex: 'prompt-hub-publishingapikey' },
-  { name: 'Scenario', defaultIndex: 'prompt-hub-scenario' },
-  { name: 'SlackMessage', defaultIndex: 'prompt-hub-slackmessage' },
-  { name: 'Template', defaultIndex: 'prompt-hub-template' },
-  { name: 'TemplateComment', defaultIndex: 'prompt-hub-templatecomment' },
-  { name: 'TestCase', defaultIndex: 'prompt-hub-testcase' },
-  { name: 'TestHistory', defaultIndex: 'prompt-hub-testhistory' },
-  { name: 'TrainingDataset', defaultIndex: 'prompt-hub-trainingdataset' },
-  { name: 'UserAPIKey', defaultIndex: 'prompt-hub-userapikey' },
-  { name: 'VectorDocument', defaultIndex: 'prompt-hub-vectordocument' },
-  { name: 'VoiceChat', defaultIndex: 'prompt-hub-voicechat' },
-  { name: 'Workflow', defaultIndex: 'prompt-hub-workflow' },
-  { name: 'WorkflowComponent', defaultIndex: 'prompt-hub-workflowcomponent' },
-  { name: 'Workspace', defaultIndex: 'prompt-hub-workspace' },
-  { name: 'WorkspaceMember', defaultIndex: 'prompt-hub-workspacemember' },
-  { name: 'DevilsAdvocateResult', defaultIndex: 'prompt-hub-devils' },
-  { name: 'AnalogyBuilderResult', defaultIndex: 'prompt-hub-analogy' },
-  { name: 'ContentRepurposerResult', defaultIndex: 'prompt-hub-repurpose' },
-  { name: 'StructureArchitectResult', defaultIndex: 'prompt-hub-outline' },
+  { name: 'Persona', defaultIndex: 'sample-prompt-persona' },
+  { name: 'Template', defaultIndex: 'sample-prompt-template' },
 ];
 
 const BASE_ENTITY_NAMES = new Set(BASE_ENTITIES.map(e => e.name));
@@ -91,7 +43,7 @@ const defaultIndexFor = (entityName) => {
   const found = BASE_ENTITIES.find(e => e.name === entityName);
   if (found) return found.defaultIndex;
   // Auto-generate index name for unknown entities
-  return `prompt-hub-${entityName
+  return `sample-prompt-${entityName
     .replace(/([a-z])([A-Z])/g, '$1-$2')
     .toLowerCase()}`;
 };
@@ -427,7 +379,7 @@ function createEsEntityHandler(entityName, getConfig) {
     async deleteMany(query) {
       const { endpoint, index } = resolve();
       const esQuery = translateQuery(query);
-      const data = await json(await fetch(`${endpoint}/${index}/_delete_by_query`, {
+      const data = await json(await fetch(`${endpoint}/${index}/_delete_by_query?refresh=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: esQuery }),
@@ -449,7 +401,7 @@ function createEsEntityHandler(entityName, getConfig) {
         lines.push(JSON.stringify(doc));
         results.push(doc);
       }
-      const data = await json(await fetch(`${endpoint}/_bulk`, {
+      const data = await json(await fetch(`${endpoint}/_bulk?refresh=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-ndjson' },
         body: lines.join('\n') + '\n',
@@ -528,7 +480,7 @@ function createEsEntityHandler(entityName, getConfig) {
       script += "ctx._source.updated_date = params._now; ";
       params._now = new Date().toISOString();
 
-      const data = await json(await fetch(`${endpoint}/${index}/_update_by_query`, {
+      const data = await json(await fetch(`${endpoint}/${index}/_update_by_query?refresh=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

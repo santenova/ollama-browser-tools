@@ -410,33 +410,12 @@ export const tryRestoreclient = async () => {
 console.log(getESEndpoint());
 forceElasticsearchMode();
 
+config.prompt = "Ahieve OCEAN CLEANUP THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED";
 
 const solution = new ProblemSolutionClient(config);
 
-const pipe = solution.createSolutionPipeline();
+const pipe = solution.createSolutionPipeline(config);
 
-console.log(pipe);
-
-const d = generateDomains("as solution to achieve OCEAN CLEANUP THE MOST LIFE SAVING IN SHORTEST TIME COST ORRIENTED") || [];
+const d = generateDomains(pipe) || [];
 
 console.log(d);
-
-const qw = [];
-const p = [];
-const q = [];
-for (let ddx = 0; ddx < d.length; ddx++) {
-
-    
-     p = generatePersonas(d[ddx],ddx);
-     console.log(p);
-     qw= generateQuestions(d[ddx]);
-     console.log(qw);
-     for (let idx = 0; idx < qw.length; idx++) {
-      console.log(JSON.stringify([d[ddx],qw[ss],ddx,idx]));
-
-        
-    
-}
-
-}
-

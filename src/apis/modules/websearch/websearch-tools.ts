@@ -1,137 +1,44 @@
-import {
-  Ollama,
-  type Message,
-  type WebSearchResponse,
-  type WebFetchResponse,
-} from 'ollama'
+/**
+ * Websearch tools — standalone web search via Ollama's OpenAI-compatible API.
+ *
+ * The previous version of this file used the `ollama` npm SDK directly, but that
+ * package is not installed in this project. The function below is the one that
+ * was previously inlined in `apis/client.ts` and is the actually-used
+ * implementation — it relies on plain `fetch` against the
+ * `/v1/chat/completions` endpoint so it works in both browser and Node.
+ */
 
-function printHeading(text: string) {
-  console.log(text)
-  console.log('='.repeat(text.length))
+/**
+ * Standalone webSearch — calls Ollama's OpenAI-compatible /v1/chat/completions
+ * endpoint. Returns the accumulated assistant content string.
+ */
+export async function webSearch(opts: {
+  prompt: string;
+  model?: string | null;
+  ollamaEndpoints: string[];
+  defaultModel: string;
+}) {
+  const {
+    prompt,
+    model: requestedModel = null,
+    ollamaEndpoints,
+    defaultModel,
+  } = opts || {};
 
-}
-export async function websearchTools(model: string, prompt: string) {
-  // Set enviornment variable OLLAMA_API_KEY=<YOUR>.<KEY>
-  // or set the header manually
-  //   const client = new Ollama({
-  //     headers: { Authorization: `Bearer ${process.env.OLLAMA_API_KEY}` },
-  //   })
-  const client = new Ollama()
+  if (!prompt) throw new Error('webSearch requires a "prompt" parameter.');
 
-  // Tool schemas
-  const webSearchTool = {
-    type: 'function',
-    function: {
-      name: 'webSearch',
-      description: 'Performs a web search for the given query.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Search query string.' },
-          max_results: {
-            type: 'number',
-            description: 'The maximum number of results to return per query (default 3).',
-          },
-        },
-        required: ['query'],
-      },
-    },
-  }
+  const host =
+    ollamaEndpoints[1] || ollamaEndpoints[0] || 'http://localhost:11434';
+  const useModel = requestedModel || defaultModel || 'qwen3:0.6b';
 
-  const webFetchTool = {
-    type: 'function',
-    function: {
-      name: 'webFetch',
-      description: 'Fetches a single page by URL.',
-      parameters: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', description: 'A single URL to fetch.' },
-        },
-        required: ['url'],
-      },
-    },
-  }
+  const messages = [{ role: 'user', content: prompt }];
 
-  const availableTools = {
-    webSearch: async (args: {
-      query: string
-      max_results?: number
-    }): Promise<WebSearchResponse> => {
-      const res = await client.webSearch(args)
-      return res as WebSearchResponse
-    },
-    webFetch: async (args: { url: string }): Promise<WebFetchResponse> => {
-      const res = await client.webFetch(args)
-      return res as WebFetchResponse
-    },
-  }
-
-  printHeading('Prompt:', prompt, '\n');
-
-  const messages: Message[] = [
-    {
-      role: 'user',
-      content: prompt,
-    },
-  ]
-
-  while (true) {
-    const response = await client.chat({
-      model: model,
-      messages: messages,
-      tools: [webSearchTool, webFetchTool],
-      stream: true,
-      think: true,
-    })
-
-    let hadToolCalls = false
-    var content = ''
-    var thinking = ''
-    for await (const chunk of response) {
-      if (chunk.message.thinking) {
-        thinking += chunk.message.thinking
-      }
-      if (chunk.message.content) {
-        content += chunk.message.content
-        process.stdout.write(chunk.message.content)
-      }
-      if (chunk.message.tool_calls && chunk.message.tool_calls.length > 0) {
-        hadToolCalls = true
-        messages.push({
-          role: 'assistant',
-          content: content,
-          thinking: thinking,
-          tool_calls: chunk.message.tool_calls,
-        })
-        // Execute tools and append tool results
-        for (const toolCall of chunk.message.tool_calls) {
-          const functionToCall = availableTools[toolCall.function.name]
-          if (functionToCall) {
-            const args = toolCall.function.arguments as any
-            printHeading(
-              '\nCalling function:'+
-              toolCall.function.name+
-              'with arguments:')
-            printHeading(args
-            )
-            const output = await functionToCall(args)
-            printHeading('\nFunction result:', JSON.stringify(output).slice(0, 200), '\n')
-
-            messages.push(chunk.message)
-            messages.push({
-              role: 'tool',
-              content: JSON.stringify(output).slice(0, 2000 * 4), // cap at ~2000 tokens
-              tool_name: toolCall.function.name,
-            })
-          }
-        }
-      }
-    }
-
-    if (!hadToolCalls) {
-      process.stdout.write('\n')
-      break
-    }
-  }
+  const res = await fetch(`${host}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: useModel, messages, stream: false, think: true }),
+  });
+  if (!res.ok) throw new Error(`webSearch error: ${res.status}`);
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? '';
 }

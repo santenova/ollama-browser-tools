@@ -109,7 +109,7 @@ export async function gptOssBrowserTools() {
 
   while (true) {
     const response = await client.chat({
-      model: 'qwen3:8b',
+      model: 'qwen3:0.6b',
       messages: messages,
       tools: [browserSearchTool, browserOpenTool, browserFindTool],
       stream: true,

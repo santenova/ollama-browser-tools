@@ -23,7 +23,7 @@ async function fetchModelCapabilities(modelId: string, endpoint = 'http://localh
 
 /**
  * Returns a map of capability → { [modelId]: paramCount }
- * e.g. { tools: { 'qwen3:8b': 8000000000 }, vision: { 'llava:latest': 7000000000 } }
+ * e.g. { tools: { 'qwen3:0.6b': 8000000000 }, vision: { 'llava:latest': 7000000000 } }
  */
 export async function capabel(endpoint = 'http://localhost:11434'): Promise<Record<string, Record<string, number>>> {
   const modelIds = await fetchModelIds(endpoint);
