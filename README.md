@@ -59,9 +59,9 @@ npm  run ingest;
 npm run start;
 ```
 
-
+ 
 ## how it should look
-
+```
 
 === apis/client.test.ts ===
 endpoint : http://127.0.0.1:11434
@@ -447,3 +447,4 @@ Yellow and black ey...
 ══════════════════════════════════════════════════
 TOTAL: 37/37 tests passed
 
+```
