@@ -49,7 +49,9 @@ docker run \
 git clone git@github.com:santenova/ollama-browser-tools.git;
 cd ollama-browser-tools;
 npm install;
-
+npm run postinstall;
+npm  run ingest;
+npm run start;
 
 
 ## how it should look
