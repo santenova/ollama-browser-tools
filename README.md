@@ -1,4 +1,5 @@
 ## ollama on the host machine
+```
 curl -fsSL https://ollama.com/install.sh | sh;
 
 ollama pull qwen3:0.6b;
@@ -6,10 +7,10 @@ ollama pull llava:7b;
 ollama pull qwen3:8b;
 ollama pull nomic-embed-text:latest;
 ollama serve;
-
+```
 
 ## ollama via docker appears slower maybe badly configured
-
+```
 docker run \
   --name ollama \
   -d \
@@ -21,13 +22,17 @@ docker run \
   -e OLLAMA_KEEP_ALIVE=24h \
   -e OLLAMA_HOST=127.0.0.1 \
   ollama/ollama;
+```
 
-  
+### pull
+
+```
 docker exec -it ollama ollama pull qwen3:0.6b;
 docker exec -it ollama ollama pull llava:7b;
 docker exec -it ollama ollama pull qwen3:8b;
 docker exec -it ollama ollama pull nomic-embed-text:latest;
 ollama list
+```
 
 NAME                       ID              SIZE      MODIFIED       
 nomic-embed-text:latest    0a109f422b47    274 MB    3 seconds ago     
@@ -36,23 +41,23 @@ llava:7b                   8dd30f6b0cb1    4.7 GB    3 minutes ago
 qwen3:0.6b                 7df6b6e09427    522 MB    5 minutes ago     
 
 ## Elasticsearch
-
+```
 docker run \
        -p 9200:9200 \
        -p 9300:9300 \
        -e "discovery.type=single-node" \
        -e "xpack.security.enabled=false" \
-       -m 6GB docker.elastic.co/elasticsearch/elasticsearch:9.4.2;
-
+       -m 6GB docker.elastic.co/elasticsearch/elasticsearch:8.4.2;
+```
 ## install
-
+```
 git clone git@github.com:santenova/ollama-browser-tools.git;
 cd ollama-browser-tools;
 npm install;
 npm run postinstall;
 npm  run ingest;
 npm run start;
-
+```
 
 ## how it should look
 
