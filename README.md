@@ -20,7 +20,7 @@ docker run \
   --interactive \
   --tty \
   -e OLLAMA_KEEP_ALIVE=24h \
-  -e OLLAMA_HOST=127.0.0.1 \
+  -e OLLAMA_HOST=0.0.0.0 \
   ollama/ollama;
 ```
 
