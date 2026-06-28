@@ -1,11 +1,12 @@
 {
   "main": "src/apis/client.ts",
   "scripts": {
-    "start": "npx tsx src/client.test.ts",
+    "start": "npx tsx src/create.client.ts",
+    "dev": "npx tsx src/client.test.ts",
     "postinstall": "cd data && python3 -m venv venv; ./venv/bin/pip3 install -r requirements.txt",
     "ingest": "cd data; ./venv/bin/python3 ./import.py --url http://127.0.0.1:9200 --file ./Persona.json --index sample-prompt-persona; ./venv/bin/python3 ./import.py --url http://127.0.0.1:9200 --file ./Template.json --index sample-prompt-template"
   },
-  "name": "free-thinker",
+  "name": "ollama-browser-tools",
   "devDependencies": {
     "ollama": "^0.6.3",
     "tsx": "^4.22.4",
