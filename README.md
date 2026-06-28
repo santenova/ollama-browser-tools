@@ -103,7 +103,7 @@ npx tsx src/create.client.ts
 > npx tsx src/create.client.ts
 ```
 
-```json
+```js
 {
   serverUrl: 'http://127.0.0.1:9200',
   appId: 'free-thinker',
@@ -178,7 +178,8 @@ npx tsx src/create.client.ts
 npm run dev
 npx tsx src/client.test.ts
 ```
-```
+
+```js
 === apis/client.test.ts ===
 endpoint : http://127.0.0.1:11434
 model    : qwen3:0.6b
@@ -334,7 +335,7 @@ GeneratorList                  → sample-prompt-generator-list
 Octopus live in the deep blue sea, consuming seag...
   batch[1] (model: "qwen2.5-coder:0.5b") → Mark the start of the JSON response
 
-```
+
 {
   "reef": "Bass R...
   batch[2] (model: "qwen3:0.6b") → The ocean is predominantly salty, consisting of approximatel...
@@ -352,7 +353,6 @@ Octopus live in the deep blue sea, consuming seag...
 Octopus live in the deep blue sea, consuming seag...
     batch[1] (model: "qwen2.5-coder:0.5b") → Mark the start of the JSON response
 
-```
 {
   "reef": "Bass R...
     batch[2] (model: "qwen3:0.6b") → The ocean is predominantly salty, consisting of approximatel...
